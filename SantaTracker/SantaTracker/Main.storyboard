@@ -224,6 +224,7 @@
                     </view>
                     <connections>
                         <outlet property="activityLabel" destination="Yh1-r8-1Wf" id="HH7-5Y-JwY"/>
+                        <outlet property="conditionIconView" destination="Xae-J0-ZZu" id="zTV-Ne-hfS"/>
                         <outlet property="mapView" destination="h83-qO-E4D" id="cIn-x9-jy7"/>
                         <outlet property="presentsRemainingLabel" destination="MeL-Yf-ico" id="VjX-fj-mdB"/>
                         <outlet property="temperatureLabel" destination="3kx-iW-5sj" id="V71-i9-tOF"/>
