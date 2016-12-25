@@ -17,6 +17,7 @@ class SantaTrackerViewController: UIViewController {
   @IBOutlet private weak var activityLabel: UILabel!
   @IBOutlet private weak var temperatureLabel: UILabel!
   @IBOutlet private weak var presentsRemainingLabel: UILabel!
+  @IBOutlet weak var conditionIconView: UIImageView!
   
   private var mapManager : MapManager!
   //Notification token that we use to get notified
@@ -25,6 +26,7 @@ class SantaTrackerViewController: UIViewController {
   //Keep a reference to Santa so that we can use KVO
   private var santa: Santa?
   private let realmManager = SantaRealmManager()
+  private var weather: Weather?
   
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -32,7 +34,7 @@ class SantaTrackerViewController: UIViewController {
     mapManager = MapManager(mapView: self.mapView)
     //log into Realm and find Santa
     realmManager.logIn {
-      if let realm = self.realmManager.realm() {
+      if let realm = self.realmManager.santaRealm() {
         let santas = realm.objects(Santa.self)
         //if we have a Santa data, just use it
         if let santa = santas.first {
@@ -64,17 +66,44 @@ class SantaTrackerViewController: UIViewController {
       self.activityLabel.text = activity
       self.presentsRemainingLabel.text = presentsRemaining
     }
+    
+    guard let weatherRealm = realmManager.weatherRealm() else { return }
+    weather?.removeObserver(self)
+    let weatherLocation = Location(latitude: santa.currentLocation.longitude, longitude: santa.currentLocation.longitude)
+    let newWeather = Weather(location: weatherLocation)
+    try? weatherRealm.write {
+      weatherRealm.add(newWeather)
+    }
+    newWeather.addObserver(self)
+    weather = newWeather
   }
   
-  override func didReceiveMemoryWarning() {
-    super.didReceiveMemoryWarning()
-    // Dispose of any resources that can be recreated.
+  private func update(with weather: Weather) {
+    let temperatureText: String
+    let conditionIcon: UIImage
+    switch weather.loadingStatus {
+    case .uploading:
+      temperatureText = "??"
+      conditionIcon = Weather.Condition.unknown.icon
+    case .processing:
+      temperatureText = "..."
+      conditionIcon = Weather.Condition.unknown.icon
+    case .complete(temperature: let temperature, condition: let condition):
+      temperatureText = "\(temperature)°C"
+      conditionIcon = condition.icon
+    }
+    DispatchQueue.main.async {
+      self.temperatureLabel.text = temperatureText
+      self.conditionIconView.image = conditionIcon
+    }
   }
   
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
     //if we are notified of a value change, check to see if it's Santa
     if let santa = object as? Santa {
       update(with: santa)
+    } else if let weather = object as? Weather {
+      update(with: weather)
     } else {
       super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
     }
