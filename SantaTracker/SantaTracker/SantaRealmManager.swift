@@ -19,7 +19,8 @@ class SantaRealmManager {
   private let password = "h0h0h0"
   
   private let authServerURL = URL(string: "http://162.243.150.99:9080")!
-  private let syncServerURL = URL(string: "realm://162.243.150.99:9080/santa")!
+  private let santaRealmURL = URL(string: "realm://162.243.150.99:9080/santa")!
+  private let weatherRealmURL = URL(string: "realm://162.243.150.99:9080/santa-weather")!
   
   //Properties
   private var user: SyncUser?
@@ -51,16 +52,25 @@ class SantaRealmManager {
   
   //Get a Realm instance based on the logged in user.
   //If we're not logged in, return nil.
-  func realm() -> Realm? {
-    if let user = user {
-      let syncConfig = SyncConfiguration(user: user, realmURL: syncServerURL)
-      let config = Realm.Configuration(syncConfiguration: syncConfig)
-      guard let realm = try? Realm(configuration:config) else {
-        fatalError("Could not load Realm")
-      }
-      return realm
-    } else {
+  func santaRealm() -> Realm? {
+    return realm(for: user, at: santaRealmURL)
+  }
+  
+  func weatherRealm() -> Realm? {
+    return realm(for: user, at: weatherRealmURL)
+  }
+  
+  private func realm(for user: SyncUser?, at syncServerURL: URL) -> Realm? {
+    guard let user = user else {
       return nil
     }
+    
+    let syncConfig = SyncConfiguration(user: user, realmURL: syncServerURL)
+    let config = Realm.Configuration(syncConfiguration: syncConfig)
+    guard let realm = try? Realm(configuration: config) else {
+      fatalError("Could not load Realm")
+    }
+    return realm
   }
+  
 }
